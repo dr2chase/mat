@@ -35,6 +35,7 @@ type M[T Field[T]] interface {
 	Row(i int) V[T]
 	Col(i int) V[T]
 	At(row, col int) T
+	Equals(b M[T]) bool
 	// Times(M[T]) M[T] // linear algebra matrix multiplication
 	// ScalarTimes(T) M[T]
 	// TimesVector(V[T]) V[T] // yields (V^T M)^T
@@ -282,6 +283,10 @@ func (a * Transposed[T]) SetCopy(b M[T]) MuM[T] {
 	return SetCopy[T](a,b)
 }
 
+func (a * Transposed[T]) Equals(b M[T]) bool {
+	return Equals[T](a.m, Transpose[T](b))
+}
+
 func (a * Transposed[T]) Transpose() M[T] {
 	return a.m
 }
@@ -393,6 +398,10 @@ func (a * ContiguousRowMatrix[T]) SetCopy(b M[T]) MuM[T] {
 	return SetCopy[T](a,b)
 }
 
+func (a * ContiguousRowMatrix[T]) Equals(b M[T]) bool {
+	return Equals[T](a, b)
+}
+
 
 // COLUMN MAJOR / CONTIGUOUS COLUMN
 
@@ -472,7 +481,7 @@ func (a * ContiguousColumnMatrix[T]) SetCopy(b M[T]) MuM[T] {
 	return SetCopy[T](a,b)
 }
 
-
-
-
+func (a * ContiguousColumnMatrix[T]) Equals(b M[T]) bool {
+	return Equals[T](a, b)
+}
 

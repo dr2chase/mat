@@ -21,7 +21,7 @@ func TestFoo(t *testing.T) {
 	}
 	mat.SetByIJ[mat.F](rm, f)
 	mat.SetByIJ[mat.F](cm, f)
-	if !mat.Equals(mat.M[mat.F](rm), mat.M[mat.F](cm)) {
+	if !mat.Equals(mat.M[mat.F](rm), mat.M[mat.F](cm)) || !rm.Equals(cm) {
 		fmt.Println("Row major matrix")
 		mat.Print(mat.M[mat.F](rm))
 		fmt.Println("Column major matrix")
