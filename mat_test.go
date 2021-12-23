@@ -6,9 +6,9 @@ import (
 	"testing"
 )
 
-func TestFoo(t *testing.T) {
-	rm := mat.RowMajor[mat.F](5, 5)
-	cm := mat.ColumnMajor[mat.F](5, 5)
+func rmAndCm() (rm, cm mat.MuM[mat.F]) {
+	rm = mat.RowMajor[mat.F](5, 5)
+	cm = mat.ColumnMajor[mat.F](5, 5)
 	f := func(i, j int) mat.F {
 		diff := j - i
 		switch diff {
@@ -21,11 +21,25 @@ func TestFoo(t *testing.T) {
 	}
 	mat.SetByIJ[mat.F](rm, f)
 	mat.SetByIJ[mat.F](cm, f)
-	if !mat.Equals(mat.M[mat.F](rm), mat.M[mat.F](cm)) || !rm.Equals(cm) {
-		fmt.Println("Row major matrix")
-		mat.Print(mat.M[mat.F](rm))
-		fmt.Println("Column major matrix")
-		mat.Print(mat.M[mat.F](cm))
+	return
+}
+
+func TestEqual(t *testing.T) {
+	rm, cm := rmAndCm()
+	fmt.Println("Row major matrix")
+	rm.Print()
+	fmt.Println("Column major matrix")
+	cm.Print()
+	if !mat.Equals(mat.M[mat.F](rm), mat.M[mat.F](cm)) {
 		t.Fail()
 	}
+	if !cm.Equals(rm) {
+		t.Fail()
+	}
+}
+
+func TestVM(t *testing.T) {
+	// rm, cm := rmAndCm()
+	v := mat.Vector[mat.F](5)
+	v.SetByI(func(i int) mat.F { return mat.F(i + 1) })
 }
