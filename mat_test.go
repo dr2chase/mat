@@ -24,12 +24,16 @@ func rmAndCm() (rm, cm mat.MuM[mat.F]) {
 	return
 }
 
-func TestEqual(t *testing.T) {
+func TestPrint(t *testing.T) {
 	rm, cm := rmAndCm()
 	fmt.Println("Row major matrix")
 	rm.Print()
 	fmt.Println("Column major matrix")
 	cm.Print()
+}
+
+func TestEqual(t *testing.T) {
+	rm, cm := rmAndCm()
 	if !mat.Equals(mat.M[mat.F](rm), mat.M[mat.F](cm)) {
 		t.Fail()
 	}
@@ -38,8 +42,27 @@ func TestEqual(t *testing.T) {
 	}
 }
 
-func TestVM(t *testing.T) {
+func TestV(t *testing.T) {
 	// rm, cm := rmAndCm()
 	v := mat.Vector[mat.F](5)
 	v.SetByI(func(i int) mat.F { return mat.F(i + 1) })
+	v.Print()
+}
+
+func TestVM(t *testing.T) {
+	rm, cm := rmAndCm()
+	v := mat.Vector[mat.F](5)
+	v.SetByI(func(i int) mat.F { return mat.F(i + 1) })
+	// v.Print()
+	rmv := rm.TimesVector(v)
+	rmv.Print()
+	cmv := cm.TimesVector(v)
+	cmv.Print()
+	rmvl := rm.LeftTimesVector(v)
+	rmvl.Print()
+	cmvl := cm.LeftTimesVector(v)
+	cmvl.Print()
+	rmtvl := rm.Transpose().LeftTimesVector(v)
+	rmtvl.Print()
+
 }

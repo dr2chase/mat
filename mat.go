@@ -23,6 +23,7 @@ type V[T Field[T]] interface {
 	Inner(V[T]) T
 	At(i int) T
 	Len() int
+	Print()
 }
 
 // Matrix
@@ -165,6 +166,10 @@ func (v *ContiguousVector[T]) Inner(w V[T]) T {
 	return sum
 }
 
+func (v *ContiguousVector[T]) Print() {
+	PrintV[T](v)
+}
+
 type StridedVector[T Field[T]] struct {
 	v           []T
 	stride, len int
@@ -184,6 +189,10 @@ func (v *StridedVector[T]) Inner(w V[T]) T {
 		sum = sum.Plus(v.At(i).Times(w.At(i)))
 	}
 	return sum
+}
+
+func (v *StridedVector[T]) Print() {
+	PrintV[T](v)
 }
 
 // Mutable Matrix
@@ -279,6 +288,25 @@ func PrintM[T Field[T]](a M[T]) {
 	}
 }
 
+func PrintV[T Field[T]](a V[T]) {
+	n := a.Len()
+	for i := 0; i < n; i++ {
+		fmt.Printf(" %v", a.At(i))
+	}
+	fmt.Printf("\n")
+}
+
+func Transpose[T Field[T]](a M[T]) M[T] {
+	switch t := a.(type) {
+	case *Transposed[T]:
+		return t.m
+	default:
+		r := &Transposed[T]{m: a}
+		r.self = r
+		return r
+	}
+}
+
 // DEFAULT METHODS
 
 type Default[T Field[T]] struct {
@@ -303,6 +331,10 @@ func (a *Default[T]) Equals(b M[T]) bool {
 
 func (a *Default[T]) Print() {
 	PrintM[T](a.self)
+}
+
+func (a *Default[T]) Transpose() M[T] {
+	return Transpose[T](a.self)
 }
 
 // func (a *Default[T]) Times(b M[T]) M[T] { // linear algebra matrix multiplication
@@ -338,17 +370,6 @@ func (a *Default[T]) TimesVector(v V[T]) V[T] { // M V
 type Transposed[T Field[T]] struct {
 	Default[T]
 	m M[T]
-}
-
-func Transpose[T Field[T]](a M[T]) M[T] {
-	switch t := a.(type) {
-	case *Transposed[T]:
-		return t.m
-	default:
-		r := &Transposed[T]{m: a}
-		r.self = r
-		return r
-	}
 }
 
 func (a *Transposed[T]) BinaryForAll(b M[T], f func(T, T) T) M[T] {
@@ -439,10 +460,6 @@ func (a *ContiguousRowMatrix[T]) UnaryForAll(f func(T) T) M[T] {
 	return r.SetUnaryForAll(a, f)
 }
 
-func (a *ContiguousRowMatrix[T]) Transpose() M[T] {
-	return Transpose[T](a)
-}
-
 func (a *ContiguousRowMatrix[T]) One() M[T] {
 	b := RowMajor[T](a.rows, a.cols)
 	var z T
@@ -506,10 +523,6 @@ func (a *ContiguousColumnMatrix[T]) BinaryForAll(b M[T], f func(T, T) T) M[T] {
 func (a *ContiguousColumnMatrix[T]) UnaryForAll(f func(T) T) M[T] {
 	r := ColumnMajor[T](a.rows, a.cols)
 	return r.SetUnaryForAll(a, f)
-}
-
-func (a *ContiguousColumnMatrix[T]) Transpose() M[T] {
-	return Transpose[T](a)
 }
 
 func (a *ContiguousColumnMatrix[T]) One() M[T] {
