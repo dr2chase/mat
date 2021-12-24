@@ -34,7 +34,7 @@ func TestPrint(t *testing.T) {
 
 func TestEqual(t *testing.T) {
 	rm, cm := rmAndCm()
-	if !mat.Equals(mat.M[mat.F](rm), mat.M[mat.F](cm)) {
+	if !mat.EqualsM(mat.M[mat.F](rm), mat.M[mat.F](cm)) {
 		t.Fail()
 	}
 	if !cm.Equals(rm) {

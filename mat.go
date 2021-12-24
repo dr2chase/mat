@@ -24,6 +24,7 @@ type V[T Field[T]] interface {
 	At(i int) T
 	Len() int
 	Print()
+	// Equals(V[T]) bool
 }
 
 // Matrix
@@ -127,6 +128,34 @@ func (b C) Equals(c C) bool {
 
 // Vectors
 
+func InnerVV[T Field[T]](v, w V[T]) T {
+	var sum T
+	for i := 0; i < v.Len(); i++ {
+		sum = sum.Plus(v.At(i).Times(w.At(i)))
+	}
+	return sum
+}
+
+// func EqualsV[T Field[T]](a, b V[T]) bool {
+// 	if a.Len() != b.Len() {
+// 		return false
+// 	}
+// 	for i := 0; i < a.elements; i++ {
+// 		if !a.At(i).Equals(b.At(i)) {
+// 			return false
+// 		}
+// 	}
+// 	return true
+// }
+
+func PrintV[T Field[T]](a V[T]) {
+	n := a.Len()
+	for i := 0; i < n; i++ {
+		fmt.Printf(" %v", a.At(i))
+	}
+	fmt.Printf("\n")
+}
+
 type ContiguousVector[T Field[T]] struct {
 	v []T
 }
@@ -159,12 +188,12 @@ func (v *ContiguousVector[T]) Len() int {
 }
 
 func (v *ContiguousVector[T]) Inner(w V[T]) T {
-	var sum T
-	for i := 0; i < v.Len(); i++ {
-		sum = sum.Plus(v.At(i).Times(w.At(i)))
-	}
-	return sum
+	return InnerVV[T](v, w)
 }
+
+// func (v *ContiguousVector[T]) Equals(w V[T]) T {
+// 	return EqualsV[T](v,w)
+// }
 
 func (v *ContiguousVector[T]) Print() {
 	PrintV[T](v)
@@ -184,12 +213,12 @@ func (v *StridedVector[T]) Len() int {
 }
 
 func (v *StridedVector[T]) Inner(w V[T]) T {
-	var sum T
-	for i := 0; i < v.Len(); i++ {
-		sum = sum.Plus(v.At(i).Times(w.At(i)))
-	}
-	return sum
+	return InnerVV[T](v, w)
 }
+
+// func (v *StridedVector[T]) Equals(w V[T]) T {
+// 	return EqualsV[T](v,w)
+// }
 
 func (v *StridedVector[T]) Print() {
 	PrintV[T](v)
@@ -204,7 +233,7 @@ type MuM[T Field[T]] interface {
 	SetCopy(M[T]) MuM[T]
 }
 
-// HELPER FUNCTIONS
+// MATRIX HELPER FUNCTIONS
 func assertSameDims[T Field[T]](a, b M[T]) {
 	ai, aj := a.Dims()
 	bi, bj := b.Dims()
@@ -263,7 +292,7 @@ func SetByIJ[T Field[T]](aMu MuM[T], f func(i, j int) T) MuM[T] {
 	return aMu
 }
 
-func Equals[T Field[T]](a, b M[T]) bool {
+func EqualsM[T Field[T]](a, b M[T]) bool {
 	rows, cols := a.Dims()
 	if br, bc := b.Dims(); br != rows || bc != cols {
 		return false
@@ -286,14 +315,6 @@ func PrintM[T Field[T]](a M[T]) {
 		}
 		fmt.Printf("\n")
 	}
-}
-
-func PrintV[T Field[T]](a V[T]) {
-	n := a.Len()
-	for i := 0; i < n; i++ {
-		fmt.Printf(" %v", a.At(i))
-	}
-	fmt.Printf("\n")
 }
 
 func Transpose[T Field[T]](a M[T]) M[T] {
@@ -326,7 +347,7 @@ func (a *Default[T]) SetCopy(b M[T]) MuM[T] {
 }
 
 func (a *Default[T]) Equals(b M[T]) bool {
-	return Equals[T](a.self, b)
+	return EqualsM[T](a.self, b)
 }
 
 func (a *Default[T]) Print() {
@@ -398,7 +419,7 @@ func (a *Transposed[T]) SetCopy(b M[T]) MuM[T] {
 }
 
 func (a *Transposed[T]) Equals(b M[T]) bool {
-	return Equals[T](a.m, Transpose[T](b))
+	return EqualsM[T](a.m, Transpose[T](b))
 }
 
 func (a *Transposed[T]) Transpose() M[T] {
