@@ -1,3 +1,7 @@
+// Copyright 2022 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package mat
 
 import (
@@ -18,13 +22,13 @@ type Field[T any] interface {
 
 // Vector
 type V[T Field[T]] interface {
-	// Plus(V[T]) V[T]
+	Plus(V[T]) V[T]
 	// Times(T) V[T] // Scalar
 	Inner(V[T]) T
 	At(i int) T
 	Len() int
 	Print()
-	// Equals(V[T]) bool
+	Equals(V[T]) bool
 }
 
 // Matrix
@@ -40,10 +44,23 @@ type M[T Field[T]] interface {
 	At(row, col int) T
 	Equals(b M[T]) bool
 	// Times(M[T]) M[T] // linear algebra matrix multiplication
-	// ScalarTimes(T) M[T]
+	ScalarTimes(T) M[T]
 	LeftTimesVector(V[T]) V[T] // yields (V^T M)^T
 	TimesVector(V[T]) V[T]     // M V
 	Print()
+	// Set(row, col int, v T) // M[row, col] = v
+}
+
+// Mutable Matrix
+type MuM[T Field[T]] interface {
+	M[T]
+	MuZero() MuM[T]
+	MuOne() MuM[T]
+
+	Set(row, col int, v T)
+	SetBinaryForAll(B, C M[T], f func(a, b T) T) MuM[T] // ∀ i,j ∈ range(A), A[i,j] = f(B[i,j], C[i,j])
+	SetUnaryForAll(B M[T], f func(a T) T) MuM[T]        // ∀ i,j ∈ range(A), A[i,j] = f(B[i,j])
+	SetCopy(B M[T]) MuM[T]                              // ∀ i,j ∈ range(A), A[i,j] = B[i,j]
 }
 
 // SCALAR TYPES
@@ -136,17 +153,17 @@ func InnerVV[T Field[T]](v, w V[T]) T {
 	return sum
 }
 
-// func EqualsV[T Field[T]](a, b V[T]) bool {
-// 	if a.Len() != b.Len() {
-// 		return false
-// 	}
-// 	for i := 0; i < a.elements; i++ {
-// 		if !a.At(i).Equals(b.At(i)) {
-// 			return false
-// 		}
-// 	}
-// 	return true
-// }
+func EqualsV[T Field[T]](a, b V[T]) bool {
+	if a.Len() != b.Len() {
+		return false
+	}
+	for i := 0; i < a.Len(); i++ {
+		if !a.At(i).Equals(b.At(i)) {
+			return false
+		}
+	}
+	return true
+}
 
 func PrintV[T Field[T]](a V[T]) {
 	n := a.Len()
@@ -160,22 +177,22 @@ type ContiguousVector[T Field[T]] struct {
 	v []T
 }
 
-type MutableContiguousVector[T Field[T]] struct {
-	ContiguousVector[T]
-}
+// type MutableContiguousVector[T Field[T]] struct {
+// 	ContiguousVector[T]
+// }
 
-func (v *MutableContiguousVector[T]) Set(i int, x T) {
+func (v *ContiguousVector[T]) Set(i int, x T) {
 	v.v[i] = x
 }
 
-func (v *MutableContiguousVector[T]) SetByI(f func(i int) T) {
+func (v *ContiguousVector[T]) SetByI(f func(i int) T) {
 	for i := range v.v {
 		v.v[i] = f(i)
 	}
 }
 
-func Vector[T Field[T]](n int) *MutableContiguousVector[T] {
-	v := &MutableContiguousVector[T]{ContiguousVector[T]{v: make([]T, n, n)}}
+func Vector[T Field[T]](n int) *ContiguousVector[T] {
+	v := &ContiguousVector[T]{v: make([]T, n, n)}
 	return v
 }
 
@@ -191,9 +208,17 @@ func (v *ContiguousVector[T]) Inner(w V[T]) T {
 	return InnerVV[T](v, w)
 }
 
-// func (v *ContiguousVector[T]) Equals(w V[T]) T {
-// 	return EqualsV[T](v,w)
-// }
+func (v *ContiguousVector[T]) Plus(w V[T]) V[T] {
+	u := Vector[T](v.Len())
+	for i := 0; i < v.Len(); i++ {
+		u.v[i] = v.At(i).Plus(w.At(i))
+	}
+	return u
+}
+
+func (v *ContiguousVector[T]) Equals(w V[T]) bool {
+	return EqualsV[T](v, w)
+}
 
 func (v *ContiguousVector[T]) Print() {
 	PrintV[T](v)
@@ -216,21 +241,20 @@ func (v *StridedVector[T]) Inner(w V[T]) T {
 	return InnerVV[T](v, w)
 }
 
-// func (v *StridedVector[T]) Equals(w V[T]) T {
-// 	return EqualsV[T](v,w)
-// }
+func (v *StridedVector[T]) Plus(w V[T]) V[T] {
+	u := Vector[T](v.Len())
+	for i := 0; i < v.Len(); i++ {
+		u.v[i] = v.At(i).Plus(w.At(i))
+	}
+	return u
+}
+
+func (v *StridedVector[T]) Equals(w V[T]) bool {
+	return EqualsV[T](v, w)
+}
 
 func (v *StridedVector[T]) Print() {
 	PrintV[T](v)
-}
-
-// Mutable Matrix
-type MuM[T Field[T]] interface {
-	M[T]
-	Set(row, col int, v T)
-	SetBinaryForAll(A, B M[T], f func(a, b T) T) MuM[T]
-	SetUnaryForAll(A M[T], f func(a T) T) MuM[T]
-	SetCopy(M[T]) MuM[T]
 }
 
 // MATRIX HELPER FUNCTIONS
@@ -328,6 +352,17 @@ func Transpose[T Field[T]](a M[T]) M[T] {
 	}
 }
 
+func MuTranspose[T Field[T]](a MuM[T]) MuM[T] {
+	switch t := a.(type) {
+	case *Transposed[T]:
+		return t.m.(MuM[T])
+	default:
+		r := &Transposed[T]{m: a}
+		r.self = r
+		return r
+	}
+}
+
 // DEFAULT METHODS
 
 type Default[T Field[T]] struct {
@@ -344,6 +379,18 @@ func (a *Default[T]) SetUnaryForAll(b M[T], f func(T) T) MuM[T] {
 
 func (a *Default[T]) SetCopy(b M[T]) MuM[T] {
 	return SetCopy[T](a.self, b)
+}
+
+func (a *Default[T]) ScalarTimes(x T) M[T] {
+	s := a.self
+	b := s.MuZero()
+	r, c := s.Dims()
+	for i := 0; i < r; i++ {
+		for j := 0; j < c; j++ {
+			b.Set(i, j, x.Times(s.At(i, j)))
+		}
+	}
+	return b
 }
 
 func (a *Default[T]) Equals(b M[T]) bool {
@@ -434,6 +481,14 @@ func (a *Transposed[T]) Zero() M[T] {
 	return Transpose(a.m.Zero()) // TODO do better
 }
 
+func (a *Transposed[T]) MuZero() MuM[T] {
+	return MuTranspose[T](a.m.(MuM[T]).MuZero()) // Note the dynamic check, this can fail.
+}
+
+func (a *Transposed[T]) MuOne() MuM[T] {
+	return MuTranspose[T](a.m.(MuM[T]).MuOne()) // Note the dynamic check, this can fail.
+}
+
 func (a *Transposed[T]) Dims() (rows int, cols int) {
 	cols, rows = a.m.Dims()
 	return
@@ -482,6 +537,10 @@ func (a *ContiguousRowMatrix[T]) UnaryForAll(f func(T) T) M[T] {
 }
 
 func (a *ContiguousRowMatrix[T]) One() M[T] {
+	return a.MuOne()
+}
+
+func (a *ContiguousRowMatrix[T]) MuOne() MuM[T] {
 	b := RowMajor[T](a.rows, a.cols)
 	var z T
 	one := z.One()
@@ -489,6 +548,10 @@ func (a *ContiguousRowMatrix[T]) One() M[T] {
 		a.x[i] = one
 	}
 	return b
+}
+
+func (a *ContiguousRowMatrix[T]) MuZero() MuM[T] {
+	return RowMajor[T](a.rows, a.cols)
 }
 
 func (a *ContiguousRowMatrix[T]) Zero() M[T] {
@@ -547,6 +610,9 @@ func (a *ContiguousColumnMatrix[T]) UnaryForAll(f func(T) T) M[T] {
 }
 
 func (a *ContiguousColumnMatrix[T]) One() M[T] {
+	return a.MuOne()
+}
+func (a *ContiguousColumnMatrix[T]) MuOne() MuM[T] {
 	b := ColumnMajor[T](a.rows, a.cols)
 	var z T
 	one := z.One()
@@ -554,6 +620,10 @@ func (a *ContiguousColumnMatrix[T]) One() M[T] {
 		a.x[i] = one
 	}
 	return b
+}
+
+func (a *ContiguousColumnMatrix[T]) MuZero() MuM[T] {
+	return ColumnMajor[T](a.rows, a.cols)
 }
 
 func (a *ContiguousColumnMatrix[T]) Zero() M[T] {

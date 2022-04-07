@@ -1,3 +1,7 @@
+// Copyright 2022 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package mat_test
 
 import (
@@ -65,4 +69,16 @@ func TestVM(t *testing.T) {
 	rmtvl := rm.Transpose().LeftTimesVector(v)
 	rmtvl.Print()
 
+	if !rmv.Equals(cmv) {
+		t.Fail()
+	}
+	if !rmvl.Equals(cmvl) {
+		t.Fail()
+	}
+	if !rmtvl.Equals(cmv) {
+		t.Fail()
+	}
+	fmt.Println("rmv rmv = ", rmv.Inner(rmv))
+	fmt.Println("rmvl rmvl = ", rmvl.Inner(rmvl))
+	fmt.Println("rmv rmvl = ", rmv.Inner(rmvl))
 }

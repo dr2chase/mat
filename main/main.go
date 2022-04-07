@@ -19,5 +19,5 @@ func main() {
 		}
 	}
 	b := a.BinaryForAll(a, func(x, y mat.F) mat.F { return mat.F(x + y) })
-	mat.Print(b)
+	mat.PrintM(b)
 }
